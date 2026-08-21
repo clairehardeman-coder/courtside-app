@@ -1,4 +1,4 @@
-portimport React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 
 import { loadLeagueData, saveLeagueData } from "./supabaseClient";
 
