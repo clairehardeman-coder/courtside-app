@@ -4,28 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Courtside</title>
-    <script>
-      function showError(msg) {
-        document.body.innerHTML =
-          '<pre style="white-space:pre-wrap;padding:16px;font-family:monospace;color:#B23A3A;font-size:13px;">' +
-          msg + '</pre>';
-      }
-      window.addEventListener('error', function (e) {
-        var target = e.target;
-        if (target && (target.tagName === 'SCRIPT' || target.tagName === 'LINK')) {
-          showError('Failed to load resource: ' + (target.src || target.href));
-        } else {
-          showError((e.message || 'Unknown error') + '\n\n' + (e.error && e.error.stack ? e.error.stack : ''));
-        }
-      }, true);
-      window.addEventListener('unhandledrejection', function (e) {
-        showError('Unhandled promise rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
-      });
-    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body>
-    <div id="root">Loading…</div>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
