@@ -315,16 +315,19 @@ export default function App() {
         ptsA += g.a; ptsB += g.b;
         if (g.a > g.b) gA++; else if (g.b > g.a) gB++;
       }
-      if (!stats[m.teamA]) stats[m.teamA] = { teamId: m.teamA, gamesWon: 0, gamesLost: 0, points: 0, matches: 0 };
-      if (!stats[m.teamB]) stats[m.teamB] = { teamId: m.teamB, gamesWon: 0, gamesLost: 0, points: 0, matches: 0 };
+      if (!stats[m.teamA]) stats[m.teamA] = { teamId: m.teamA, matchesWon: 0, matchesLost: 0, gamesWon: 0, gamesLost: 0, points: 0, matches: 0 };
+      if (!stats[m.teamB]) stats[m.teamB] = { teamId: m.teamB, matchesWon: 0, matchesLost: 0, gamesWon: 0, gamesLost: 0, points: 0, matches: 0 };
       stats[m.teamA].gamesWon += gA; stats[m.teamA].gamesLost += gB; stats[m.teamA].points += ptsA; stats[m.teamA].matches += 1;
       stats[m.teamB].gamesWon += gB; stats[m.teamB].gamesLost += gA; stats[m.teamB].points += ptsB; stats[m.teamB].matches += 1;
+      // Match winner is whoever won more games within that match (best of 3).
+      if (gA > gB) { stats[m.teamA].matchesWon += 1; stats[m.teamB].matchesLost += 1; }
+      else if (gB > gA) { stats[m.teamB].matchesWon += 1; stats[m.teamA].matchesLost += 1; }
     }
     const teams = teamsSnapshot || data.teams;
     return Object.values(stats)
       .map((s) => ({ ...s, team: teams.find((t) => t.id === s.teamId) }))
       .filter((s) => s.team)
-      .sort((x, y) => y.gamesWon - x.gamesWon || y.points - x.points);
+      .sort((x, y) => y.matchesWon - x.matchesWon || y.gamesWon - x.gamesWon || y.points - x.points);
   };
 
   const closeSeason = (seasonId) => {
@@ -555,12 +558,12 @@ export default function App() {
                             <div className="flex-1 min-w-0">
                               <p className="font-body font-semibold text-sm truncate">{teamName(s.team)}</p>
                               <p className="font-mono text-xs" style={{ color: "var(--woodDark)" }}>
-                                {s.matches} matches · {s.points} pts scored
+                                {s.matches} matches · {s.gamesWon}-{s.gamesLost} games · {s.points} pts
                               </p>
                             </div>
                             <div className="text-right shrink-0">
-                              <p className="font-mono text-lg font-semibold tabular-nums">{s.gamesWon}-{s.gamesLost}</p>
-                              <p className="font-mono text-[10px] uppercase" style={{ color: "var(--woodDark)" }}>games</p>
+                              <p className="font-mono text-lg font-semibold tabular-nums">{s.matchesWon}-{s.matchesLost}</p>
+                              <p className="font-mono text-[10px] uppercase" style={{ color: "var(--woodDark)" }}>match wins</p>
                             </div>
                           </div>
                           {i < standings.length - 1 && <div className="perf mx-4" />}
