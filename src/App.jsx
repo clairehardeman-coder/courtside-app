@@ -1,4 +1,5 @@
-port React, { useEffect, useState, useMemo } from "react";
+portimport React, { useEffect, useState, useMemo } from "react";
+
 import { loadLeagueData, saveLeagueData } from "./supabaseClient";
 
 const DEFAULT_DIVISIONS = ["Division 1", "Division 2", "Division 3", "Division 4"];
