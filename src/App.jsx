@@ -63,7 +63,7 @@ function DivisionOverview({ divisions, groups, activeDiv, onPick, query, setQuer
       <p className="font-mono text-xs uppercase tracking-wide mb-1.5" style={{ color: "var(--woodDark)" }}>All divisions</p>
       <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find your name…"
         className="w-full mb-2.5 px-3 py-2 rounded-md text-sm" style={{ border: "1px solid var(--woodDark)", background: "white" }} />
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: 6, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: 6, alignItems: "stretch" }}>
         {divisions.map((name, i) => {
           const rows = groups[i] || [];
           const found = rows.some((r) => isMatch(r.team));
@@ -71,16 +71,16 @@ function DivisionOverview({ divisions, groups, activeDiv, onPick, query, setQuer
           const showName = name !== `Division ${i + 1}`;
           return (
             <div key={name + i} onClick={() => onPick(i)} className="rounded-lg overflow-hidden cursor-pointer"
-              style={{ border: active ? "2px solid var(--court)" : "1px solid var(--woodDark)", background: "white", minWidth: 0 }}>
+              style={{ border: active ? "2px solid var(--court)" : "1px solid var(--woodDark)", background: "white", minWidth: 0, display: "flex", flexDirection: "column" }}>
               <div className="px-1.5 py-1.5 text-center"
                 style={{ background: active ? "var(--court)" : "rgba(74,67,60,0.08)", color: active ? "var(--cream)" : "var(--ink)" }}>
                 <p className="font-mono text-xs font-semibold">D{i + 1}{found ? " ★" : ""}</p>
-                {showName && <p className="font-body truncate" style={{ fontSize: 10, opacity: 0.85 }}>{name}</p>}
+                <p className="font-body truncate" style={{ fontSize: 10, opacity: 0.85, minHeight: 13 }}>{showName ? name : "\u00A0"}</p>
               </div>
               {rows.length === 0 ? (
                 <p className="font-body text-center px-1 py-2" style={{ fontSize: 10, color: "var(--woodDark)" }}>No teams</p>
               ) : (
-                <div className="p-1">
+                <div className="p-1" style={{ flex: 1 }}>
                   {rows.map((r) => (
                     <div key={r.teamId} className="rounded px-1 py-0.5 mb-0.5"
                       style={{ background: isMatch(r.team) ? "rgba(255,92,1,0.25)" : "transparent", fontWeight: isMatch(r.team) ? 600 : 400 }}>
