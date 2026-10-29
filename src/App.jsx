@@ -133,6 +133,11 @@ function NewSeasonForm({ seasonsCount, seasonForm, setSeasonForm, formError, onS
             className="w-full mt-1 px-3 py-2 rounded-md text-sm" style={{ border: "1px solid var(--woodDark)" }} />
         </div>
       </div>
+      <div>
+        <label className="font-mono text-xs uppercase tracking-wide" style={{ color: "var(--woodDark)" }}>Prize (optional)</label>
+        <input type="text" value={seasonForm.prize || ""} onChange={(e) => setSeasonForm({ ...seasonForm, prize: e.target.value })}
+          placeholder="e.g. Bottle of fizz + bragging rights" className="w-full mt-1 px-3 py-2 rounded-md text-sm" style={{ border: "1px solid var(--woodDark)" }} />
+      </div>
       {formError && <p className="font-body text-xs" style={{ color: "#B23A3A" }}>{formError}</p>}
       <button onClick={onSubmit} className="w-full py-2.5 rounded-md font-body font-semibold text-sm" style={{ background: "var(--court)", color: "var(--cream)" }}>
         Start season
@@ -200,7 +205,7 @@ export default function App() {
   const [matchForm, setMatchForm] = useState(emptyMatchForm);
   const [newTeam, setNewTeam] = useState({ p1: "", p2: "", division: 0 });
   const [newDivisionName, setNewDivisionName] = useState("");
-  const [seasonForm, setSeasonForm] = useState({ name: "", startDate: todayISO(), endDate: "" });
+  const [seasonForm, setSeasonForm] = useState({ name: "", startDate: todayISO(), endDate: "", prize: "" });
   const [closeSummary, setCloseSummary] = useState(null);
   const [adminMode, setAdminMode] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved | error
@@ -421,12 +426,20 @@ export default function App() {
       return;
     }
     setFormError("");
-    const season = { id: uid(), name, startDate: seasonForm.startDate, endDate: seasonForm.endDate, closed: false };
+    const season = { id: uid(), name, startDate: seasonForm.startDate, endDate: seasonForm.endDate, prize: (seasonForm.prize || "").trim(), closed: false };
     const next = { ...data, seasons: [...data.seasons, season], activeSeasonId: season.id };
     persist(next);
     setSelectedSeasonId(season.id);
     setCloseSummary(null);
-    setSeasonForm({ name: "", startDate: todayISO(), endDate: "" });
+    setSeasonForm({ name: "", startDate: todayISO(), endDate: "", prize: "" });
+  };
+
+  const setPrize = (seasonId) => {
+    const season = data.seasons.find((x) => x.id === seasonId);
+    if (!season) return;
+    const answer = window.prompt(`What's the prize for ${season.name}? (leave empty for none)`, season.prize || "");
+    if (answer === null) return;
+    persist({ ...data, seasons: data.seasons.map((x) => (x.id === seasonId ? { ...x, prize: answer.trim() } : x)) });
   };
 
   const computeStandingsFor = (seasonId, div, catKey, teamsSnapshot) => {
@@ -516,7 +529,7 @@ export default function App() {
     const next = { ...data, teams: nextTeams, seasons: nextSeasons, activeSeasonId: null };
     persist(next);
     setCloseSummary(moves.length ? moves : ["No promotions or relegations — not enough completed matches yet."]);
-    setSeasonForm({ name: "", startDate: todayISO(), endDate: "" });
+    setSeasonForm({ name: "", startDate: todayISO(), endDate: "", prize: "" });
   };
 
   // ---- Matches ----
@@ -734,6 +747,15 @@ export default function App() {
                       {fmtDate(viewingSeason.startDate)} → {fmtDate(viewingSeason.endDate)}
                     </p>
                   )}
+                  {viewingSeason && viewingSeason.prize && (
+                    <div className="rounded-lg px-3 py-2.5 mt-3 flex items-center gap-3" style={{ background: "rgba(255,92,1,0.14)", border: "1px solid var(--court)" }}>
+                      <span style={{ fontSize: 26, lineHeight: 1 }}>🏆</span>
+                      <div className="min-w-0">
+                        <p className="font-mono text-[10px] uppercase tracking-wide" style={{ color: "var(--woodDark)" }}>Prize this season</p>
+                        <p className="font-display text-base" style={{ overflowWrap: "anywhere" }}>{viewingSeason.prize}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {overviewEl}
@@ -895,6 +917,14 @@ export default function App() {
                       This season ended {fmtDate(activeSeason.endDate)}.
                     </p>
                   )}
+                  <div className="flex items-center justify-between gap-2 mt-3">
+                    <p className="font-body text-sm min-w-0" style={{ overflowWrap: "anywhere" }}>
+                      {activeSeason.prize ? `🏆 ${activeSeason.prize}` : "No prize set"}
+                    </p>
+                    <button onClick={() => setPrize(activeSeason.id)} className="font-mono text-xs shrink-0" style={{ color: "var(--court)" }}>
+                      {activeSeason.prize ? "Edit prize" : "Set prize"}
+                    </button>
+                  </div>
                   <button onClick={() => closeSeason(activeSeason.id)}
                     className="w-full mt-3 py-2 rounded-md font-body font-semibold text-sm"
                     style={{ background: seasonEnded ? "var(--court)" : "white", color: seasonEnded ? "var(--cream)" : "var(--court)", border: "1px solid var(--court)" }}>
@@ -930,9 +960,10 @@ export default function App() {
                           {fmtDate(s.startDate)} → {fmtDate(s.endDate)}
                         </p>
                       </div>
-                      <button onClick={() => deleteSeason(s.id)} className="font-mono text-xs shrink-0" style={{ color: "#B23A3A" }}>
-                        delete
-                      </button>
+                      <div className="flex gap-3 shrink-0">
+                        <button onClick={() => setPrize(s.id)} className="font-mono text-xs" style={{ color: "var(--court)" }}>prize</button>
+                        <button onClick={() => deleteSeason(s.id)} className="font-mono text-xs" style={{ color: "#B23A3A" }}>delete</button>
+                      </div>
                     </div>
                   ))}
                 </div>
