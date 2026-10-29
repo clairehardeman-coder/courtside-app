@@ -15,6 +15,17 @@ const fmtDate = (iso) => {
 };
 const teamName = (t) => (t ? `${t.p1} & ${t.p2}` : "Unknown team");
 
+// Turns a typed phone number into a WhatsApp link. UK style (07..., +44..., 0044...) all work.
+// Returns null if it doesn't look like a real number.
+const waLink = (phone) => {
+  let d = String(phone || "").replace(/[^\d+]/g, "");
+  if (d.startsWith("+")) d = d.slice(1);
+  else if (d.startsWith("00")) d = d.slice(2);
+  else if (d.startsWith("0")) d = "44" + d.slice(1);
+  if (d.length < 9 || d.length > 15) return null;
+  return `https://wa.me/${d}?text=${encodeURIComponent("Hi! Are you free to play our Courtside league match?")}`;
+};
+
 const emptyMatchForm = { teamA: "", teamB: "", g1a: "", g1b: "", g2a: "", g2b: "", g3a: "", g3b: "" };
 
 function isValidGame(a, b) {
@@ -203,7 +214,7 @@ export default function App() {
   const [selectedSeasonId, setSelectedSeasonId] = useState(null);
   const [formError, setFormError] = useState("");
   const [matchForm, setMatchForm] = useState(emptyMatchForm);
-  const [newTeam, setNewTeam] = useState({ p1: "", p2: "", division: 0 });
+  const [newTeam, setNewTeam] = useState({ p1: "", p2: "", phone: "", division: 0 });
   const [newDivisionName, setNewDivisionName] = useState("");
   const [seasonForm, setSeasonForm] = useState({ name: "", startDate: todayISO(), endDate: "", prize: "" });
   const [closeSummary, setCloseSummary] = useState(null);
@@ -334,15 +345,33 @@ export default function App() {
       setFormError("A team needs two different people.");
       return;
     }
+    const phone = (newTeam.phone || "").trim();
+    if (phone && !waLink(phone)) {
+      setFormError("That phone number doesn't look right. Leave it blank, or use a full number like 07700 900123.");
+      return;
+    }
     setFormError("");
-    const team = { id: uid(), p1, p2, division: newTeam.division, categoryId: cid };
+    const team = { id: uid(), p1, p2, phone, division: newTeam.division, categoryId: cid };
     persist({ ...data, teams: [...data.teams, team] });
-    setNewTeam({ p1: "", p2: "", division: newTeam.division });
+    setNewTeam({ p1: "", p2: "", phone: "", division: newTeam.division });
   };
 
   const removeTeam = (id) => persist({ ...data, teams: data.teams.filter((t) => t.id !== id) });
   const setTeamDivision = (id, division) =>
     persist({ ...data, teams: data.teams.map((t) => (t.id === id ? { ...t, division } : t)) });
+
+  const setTeamPhone = (id) => {
+    const t = data.teams.find((x) => x.id === id);
+    if (!t) return;
+    const answer = window.prompt(`Contact number for ${teamName(t)} (one of them). Leave empty to remove.`, t.phone || "");
+    if (answer === null) return;
+    const phone = answer.trim();
+    if (phone && !waLink(phone)) {
+      window.alert("That doesn't look like a phone number. Try something like 07700 900123.");
+      return;
+    }
+    persist({ ...data, teams: data.teams.map((x) => (x.id === id ? { ...x, phone } : x)) });
+  };
 
   const teamsInDiv = (div) => data.teams.filter((t) => t.categoryId === cid && t.division === div);
 
@@ -785,6 +814,13 @@ export default function App() {
                               <p className="font-mono text-xs" style={{ color: "var(--woodDark)" }}>
                                 {s.matches} matches · {s.gamesWon}-{s.gamesLost} games · {s.points} pts
                               </p>
+                              {waLink(s.team.phone) && (
+                                <a href={waLink(s.team.phone)} target="_blank" rel="noopener noreferrer"
+                                  className="inline-block mt-1.5 font-mono text-[11px] px-2.5 py-1 rounded-full"
+                                  style={{ background: "#0E7C4A", color: "white", textDecoration: "none" }}>
+                                  💬 Message
+                                </a>
+                              )}
                             </div>
                             <div className="text-right shrink-0">
                               <p className="font-mono text-lg font-semibold tabular-nums">{s.matchesWon}-{s.matchesLost}</p>
@@ -1032,6 +1068,11 @@ export default function App() {
                   placeholder="Player 1 name" className="w-full px-3 py-2 rounded-md text-sm" style={{ border: "1px solid var(--woodDark)" }} />
                 <input type="text" value={newTeam.p2} onChange={(e) => setNewTeam({ ...newTeam, p2: e.target.value })}
                   placeholder="Player 2 name" className="w-full px-3 py-2 rounded-md text-sm" style={{ border: "1px solid var(--woodDark)" }} />
+                <input type="tel" inputMode="tel" value={newTeam.phone || ""} onChange={(e) => setNewTeam({ ...newTeam, phone: e.target.value })}
+                  placeholder="Contact number (optional, for the Message button)" className="w-full px-3 py-2 rounded-md text-sm" style={{ border: "1px solid var(--woodDark)" }} />
+                <p className="font-body text-[11px]" style={{ color: "var(--woodDark)" }}>
+                  One number per team. Use 📞 next to a team in the list below to add or change it later. Only ask for numbers people are happy to share.
+                </p>
                 <div className="flex gap-2">
                   <select value={newTeam.division} onChange={(e) => setNewTeam({ ...newTeam, division: Number(e.target.value) })}
                     className="flex-1 px-2 py-2 rounded-md text-sm font-mono" style={{ border: "1px solid var(--woodDark)" }}>
@@ -1063,6 +1104,8 @@ export default function App() {
                               className="font-mono text-xs px-2 py-1 rounded-md" style={{ border: "1px solid var(--woodDark)" }}>
                               {divisions.map((dd, ii) => <option key={dd} value={ii}>D{ii + 1}</option>)}
                             </select>
+                            <button onClick={() => setTeamPhone(t.id)} className="font-mono text-xs" title="Contact number"
+                              style={{ color: t.phone ? "#0E7C4A" : "var(--woodDark)" }}>{t.phone ? "📞✓" : "📞+"}</button>
                             <button onClick={() => removeTeam(t.id)} className="font-mono text-xs" style={{ color: "#B23A3A" }}>remove</button>
                           </div>
                           {i < group.length - 1 && <div className="perf mx-4" />}
