@@ -53,44 +53,39 @@ function CategoryTabs({ categories, value, onChange }) {
   );
 }
 
-// The front-page picture: every division stacked top to bottom, with its teams listed.
+// The front-page picture: every division side by side (up to 4 across), with its teams listed.
 function DivisionOverview({ divisions, groups, activeDiv, onPick, query, setQuery, showRecord }) {
   const q = query.trim().toLowerCase();
   const isMatch = (t) => q.length > 0 && teamName(t).toLowerCase().includes(q);
+  const cols = Math.min(Math.max(divisions.length, 1), 4);
   return (
     <div className="mb-5">
       <p className="font-mono text-xs uppercase tracking-wide mb-1.5" style={{ color: "var(--woodDark)" }}>All divisions</p>
       <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find your name…"
         className="w-full mb-2.5 px-3 py-2 rounded-md text-sm" style={{ border: "1px solid var(--woodDark)", background: "white" }} />
-      <div className="space-y-2.5">
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: 6, alignItems: "start" }}>
         {divisions.map((name, i) => {
           const rows = groups[i] || [];
           const found = rows.some((r) => isMatch(r.team));
           const active = activeDiv === i;
+          const showName = name !== `Division ${i + 1}`;
           return (
-            <div key={name + i} onClick={() => onPick(i)} className="rounded-xl overflow-hidden cursor-pointer"
-              style={{ border: active ? "2px solid var(--court)" : "1px solid var(--woodDark)", background: "white" }}>
-              <div className="flex items-center gap-2 px-3 py-2"
+            <div key={name + i} onClick={() => onPick(i)} className="rounded-lg overflow-hidden cursor-pointer"
+              style={{ border: active ? "2px solid var(--court)" : "1px solid var(--woodDark)", background: "white", minWidth: 0 }}>
+              <div className="px-1.5 py-1.5 text-center"
                 style={{ background: active ? "var(--court)" : "rgba(74,67,60,0.08)", color: active ? "var(--cream)" : "var(--ink)" }}>
-                <span className="font-mono text-xs font-semibold">D{i + 1}</span>
-                <span className="font-display text-sm flex-1 truncate">{name}</span>
-                {found && (
-                  <span className="font-mono text-[10px] px-2 py-0.5 rounded-full" style={{ background: "var(--ball)", color: "var(--ink)", border: "1px solid var(--ink)" }}>
-                    you're here
-                  </span>
-                )}
-                <span className="font-mono text-[10px]" style={{ opacity: 0.8 }}>{rows.length} {rows.length === 1 ? "team" : "teams"}</span>
+                <p className="font-mono text-xs font-semibold">D{i + 1}{found ? " ★" : ""}</p>
+                {showName && <p className="font-body truncate" style={{ fontSize: 10, opacity: 0.85 }}>{name}</p>}
               </div>
               {rows.length === 0 ? (
-                <p className="font-body text-xs px-3 py-2" style={{ color: "var(--woodDark)" }}>No teams yet</p>
+                <p className="font-body text-center px-1 py-2" style={{ fontSize: 10, color: "var(--woodDark)" }}>No teams</p>
               ) : (
-                <div className="px-2 py-1.5">
-                  {rows.map((r, ri) => (
-                    <div key={r.teamId} className="flex items-center gap-2 text-sm rounded-md px-1.5 py-0.5"
-                      style={{ background: isMatch(r.team) ? "rgba(255,92,1,0.2)" : "transparent", fontWeight: isMatch(r.team) ? 600 : 400 }}>
-                      <span className="font-mono text-[11px] w-4 shrink-0" style={{ color: "var(--woodDark)" }}>{ri + 1}</span>
-                      <span className="font-body flex-1 truncate">{teamName(r.team)}</span>
-                      {showRecord && <span className="font-mono text-xs tabular-nums shrink-0">{r.matchesWon}-{r.matchesLost}</span>}
+                <div className="p-1">
+                  {rows.map((r) => (
+                    <div key={r.teamId} className="rounded px-1 py-0.5 mb-0.5"
+                      style={{ background: isMatch(r.team) ? "rgba(255,92,1,0.25)" : "transparent", fontWeight: isMatch(r.team) ? 600 : 400 }}>
+                      <p className="font-body" style={{ fontSize: 11, lineHeight: 1.2, overflowWrap: "anywhere" }}>{teamName(r.team)}</p>
+                      {showRecord && <p className="font-mono tabular-nums" style={{ fontSize: 10, color: "var(--woodDark)" }}>{r.matchesWon}-{r.matchesLost}</p>}
                     </div>
                   ))}
                 </div>
@@ -99,7 +94,7 @@ function DivisionOverview({ divisions, groups, activeDiv, onPick, query, setQuer
           );
         })}
       </div>
-      <p className="font-body text-[11px] mt-2" style={{ color: "var(--woodDark)" }}>Tap a division to see its full table below.</p>
+      <p className="font-body text-[11px] mt-2" style={{ color: "var(--woodDark)" }}>Tap a division to see its full table below. ★ = your name is in that division.</p>
     </div>
   );
 }
