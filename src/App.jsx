@@ -15,6 +15,16 @@ const fmtDate = (iso) => {
 };
 const teamName = (t) => (t ? `${t.p1} & ${t.p2}` : "Unknown team");
 
+const firstName = (full) => String(full || "").trim().split(/\s+/)[0] || "";
+
+// WhatsApp group invite links look like https://chat.whatsapp.com/XXXX
+const cleanChatLink = (raw) => {
+  let l = String(raw || "").trim();
+  if (!l) return "";
+  if (l.startsWith("chat.whatsapp.com")) l = "https://" + l;
+  return l.startsWith("https://chat.whatsapp.com/") && l.length > 30 ? l : null;
+};
+
 // Turns a typed phone number into a WhatsApp link. UK style (07..., +44..., 0044...) all work.
 // Returns null if it doesn't look like a real number.
 const waLink = (phone) => {
@@ -214,7 +224,7 @@ export default function App() {
   const [selectedSeasonId, setSelectedSeasonId] = useState(null);
   const [formError, setFormError] = useState("");
   const [matchForm, setMatchForm] = useState(emptyMatchForm);
-  const [newTeam, setNewTeam] = useState({ p1: "", p2: "", phone: "", division: 0 });
+  const [newTeam, setNewTeam] = useState({ p1: "", p2: "", phone: "", phone2: "", division: 0 });
   const [newDivisionName, setNewDivisionName] = useState("");
   const [seasonForm, setSeasonForm] = useState({ name: "", startDate: todayISO(), endDate: "", prize: "" });
   const [closeSummary, setCloseSummary] = useState(null);
@@ -346,14 +356,15 @@ export default function App() {
       return;
     }
     const phone = (newTeam.phone || "").trim();
-    if (phone && !waLink(phone)) {
+    const phone2 = (newTeam.phone2 || "").trim();
+    if ((phone && !waLink(phone)) || (phone2 && !waLink(phone2))) {
       setFormError("That phone number doesn't look right. Leave it blank, or use a full number like 07700 900123.");
       return;
     }
     setFormError("");
-    const team = { id: uid(), p1, p2, phone, division: newTeam.division, categoryId: cid };
+    const team = { id: uid(), p1, p2, phone, phone2, division: newTeam.division, categoryId: cid };
     persist({ ...data, teams: [...data.teams, team] });
-    setNewTeam({ p1: "", p2: "", phone: "", division: newTeam.division });
+    setNewTeam({ p1: "", p2: "", phone: "", phone2: "", division: newTeam.division });
   };
 
   const removeTeam = (id) => persist({ ...data, teams: data.teams.filter((t) => t.id !== id) });
@@ -363,14 +374,31 @@ export default function App() {
   const setTeamPhone = (id) => {
     const t = data.teams.find((x) => x.id === id);
     if (!t) return;
-    const answer = window.prompt(`Contact number for ${teamName(t)} (one of them). Leave empty to remove.`, t.phone || "");
-    if (answer === null) return;
-    const phone = answer.trim();
-    if (phone && !waLink(phone)) {
-      window.alert("That doesn't look like a phone number. Try something like 07700 900123.");
+    const a1 = window.prompt(`Number for ${t.p1} (leave empty for none)`, t.phone || "");
+    if (a1 === null) return;
+    const a2 = window.prompt(`Number for ${t.p2} (leave empty for none)`, t.phone2 || "");
+    if (a2 === null) return;
+    const phone = a1.trim();
+    const phone2 = a2.trim();
+    if ((phone && !waLink(phone)) || (phone2 && !waLink(phone2))) {
+      window.alert("One of those doesn't look like a phone number. Try something like 07700 900123.");
       return;
     }
-    persist({ ...data, teams: data.teams.map((x) => (x.id === id ? { ...x, phone } : x)) });
+    persist({ ...data, teams: data.teams.map((x) => (x.id === id ? { ...x, phone, phone2 } : x)) });
+  };
+
+  // ---- Division WhatsApp group chats (invite links you create in WhatsApp) ----
+  const setDivisionChat = (i) => {
+    const current = (cat.chats && cat.chats[i]) || "";
+    const answer = window.prompt(`Paste the WhatsApp group invite link for ${divisions[i]} (leave empty to remove)`, current);
+    if (answer === null) return;
+    const link = cleanChatLink(answer);
+    if (link === null) {
+      window.alert("That doesn't look like a WhatsApp group invite link. It should start with https://chat.whatsapp.com/");
+      return;
+    }
+    const chats = divisions.map((_, idx) => (idx === i ? link : (cat.chats && cat.chats[idx]) || ""));
+    persist({ ...data, categories: data.categories.map((c) => (c.id === cid ? { ...c, chats } : c)) });
   };
 
   const teamsInDiv = (div) => data.teams.filter((t) => t.categoryId === cid && t.division === div);
@@ -792,7 +820,15 @@ export default function App() {
                 <div id="division-table" style={{ scrollMarginTop: 150 }} />
                 <p className="font-mono text-xs uppercase tracking-wide mb-1.5" style={{ color: "var(--woodDark)" }}>Division</p>
                 <DivisionSegmented value={standingsDiv} onChange={setStandingsDiv} divisions={divisions} />
-                <p className="font-display text-lg mt-3 mb-3">{data.categories.length > 1 ? `${cat.name} · ` : ""}{divisions[standingsDiv]}</p>
+                <p className="font-display text-lg mt-3 mb-2">{data.categories.length > 1 ? `${cat.name} · ` : ""}{divisions[standingsDiv]}</p>
+                {cat.chats && cat.chats[standingsDiv] && (
+                  <a href={cat.chats[standingsDiv]} target="_blank" rel="noopener noreferrer"
+                    className="inline-block mb-3 font-body text-sm font-semibold px-3.5 py-2 rounded-full"
+                    style={{ background: "#0E7C4A", color: "white", textDecoration: "none" }}>
+                    💬 Join the {divisions[standingsDiv]} chat
+                  </a>
+                )}
+                <div className="mb-1" />
 
                 {standings.length === 0 ? (
                   <div className="rounded-xl p-6 text-center" style={{ border: "1px dashed var(--woodDark)", background: "rgba(74,67,60,0.06)" }}>
@@ -814,12 +850,18 @@ export default function App() {
                               <p className="font-mono text-xs" style={{ color: "var(--woodDark)" }}>
                                 {s.matches} matches · {s.gamesWon}-{s.gamesLost} games · {s.points} pts
                               </p>
-                              {waLink(s.team.phone) && (
-                                <a href={waLink(s.team.phone)} target="_blank" rel="noopener noreferrer"
-                                  className="inline-block mt-1.5 font-mono text-[11px] px-2.5 py-1 rounded-full"
-                                  style={{ background: "#0E7C4A", color: "white", textDecoration: "none" }}>
-                                  💬 Message
-                                </a>
+                              {(waLink(s.team.phone) || waLink(s.team.phone2)) && (
+                                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                  {[[s.team.p1, s.team.phone], [s.team.p2, s.team.phone2]].map(([nm, ph], k) =>
+                                    waLink(ph) ? (
+                                      <a key={k} href={waLink(ph)} target="_blank" rel="noopener noreferrer"
+                                        className="inline-block font-mono text-[11px] px-2.5 py-1 rounded-full"
+                                        style={{ background: "#0E7C4A", color: "white", textDecoration: "none" }}>
+                                        💬 {firstName(nm)}
+                                      </a>
+                                    ) : null
+                                  )}
+                                </div>
                               )}
                             </div>
                             <div className="text-right shrink-0">
@@ -1043,6 +1085,21 @@ export default function App() {
                   </span>
                 ))}
               </div>
+              <p className="font-mono text-xs uppercase tracking-wide mb-1" style={{ color: "var(--woodDark)" }}>WhatsApp chat for each division</p>
+              <p className="font-body text-[11px] mb-2" style={{ color: "var(--woodDark)" }}>
+                Make a WhatsApp group, copy its invite link, and add it here. Members then see a Join button.
+              </p>
+              <div className="space-y-1.5 mb-3">
+                {divisions.map((d, i) => (
+                  <div key={d + i} className="flex items-center justify-between gap-2 rounded-lg px-3 py-1.5" style={{ border: "1px solid var(--woodDark)" }}>
+                    <span className="font-body text-sm truncate">D{i + 1} · {d}</span>
+                    <button onClick={() => setDivisionChat(i)} className="font-mono text-xs shrink-0"
+                      style={{ color: cat.chats && cat.chats[i] ? "#0E7C4A" : "var(--court)" }}>
+                      {cat.chats && cat.chats[i] ? "chat link ✓ edit" : "+ add chat link"}
+                    </button>
+                  </div>
+                ))}
+              </div>
               <div className="flex gap-2">
                 <input type="text" value={newDivisionName} onChange={(e) => setNewDivisionName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addDivision()}
@@ -1064,14 +1121,18 @@ export default function App() {
             <div className="rounded-xl p-4 mb-4" style={{ border: "1px solid var(--woodDark)", background: "white" }}>
               <label className="font-mono text-xs uppercase tracking-wide" style={{ color: "var(--woodDark)" }}>Add a team</label>
               <div className="space-y-2 mt-1">
-                <input type="text" value={newTeam.p1} onChange={(e) => setNewTeam({ ...newTeam, p1: e.target.value })}
-                  placeholder="Player 1 name" className="w-full px-3 py-2 rounded-md text-sm" style={{ border: "1px solid var(--woodDark)" }} />
-                <input type="text" value={newTeam.p2} onChange={(e) => setNewTeam({ ...newTeam, p2: e.target.value })}
-                  placeholder="Player 2 name" className="w-full px-3 py-2 rounded-md text-sm" style={{ border: "1px solid var(--woodDark)" }} />
-                <input type="tel" inputMode="tel" value={newTeam.phone || ""} onChange={(e) => setNewTeam({ ...newTeam, phone: e.target.value })}
-                  placeholder="Contact number (optional, for the Message button)" className="w-full px-3 py-2 rounded-md text-sm" style={{ border: "1px solid var(--woodDark)" }} />
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="text" value={newTeam.p1} onChange={(e) => setNewTeam({ ...newTeam, p1: e.target.value })}
+                    placeholder="Player 1 name" className="w-full min-w-0 px-3 py-2 rounded-md text-sm" style={{ border: "1px solid var(--woodDark)" }} />
+                  <input type="tel" inputMode="tel" value={newTeam.phone || ""} onChange={(e) => setNewTeam({ ...newTeam, phone: e.target.value })}
+                    placeholder="Their number" className="w-full min-w-0 px-3 py-2 rounded-md text-sm" style={{ border: "1px solid var(--woodDark)" }} />
+                  <input type="text" value={newTeam.p2} onChange={(e) => setNewTeam({ ...newTeam, p2: e.target.value })}
+                    placeholder="Player 2 name" className="w-full min-w-0 px-3 py-2 rounded-md text-sm" style={{ border: "1px solid var(--woodDark)" }} />
+                  <input type="tel" inputMode="tel" value={newTeam.phone2 || ""} onChange={(e) => setNewTeam({ ...newTeam, phone2: e.target.value })}
+                    placeholder="Their number" className="w-full min-w-0 px-3 py-2 rounded-md text-sm" style={{ border: "1px solid var(--woodDark)" }} />
+                </div>
                 <p className="font-body text-[11px]" style={{ color: "var(--woodDark)" }}>
-                  One number per team. Use 📞 next to a team in the list below to add or change it later. Only ask for numbers people are happy to share.
+                  Numbers are optional and give each player a Message button. Use 📞 next to a team in the list below to add or change them later. Only add numbers people are happy to share.
                 </p>
                 <div className="flex gap-2">
                   <select value={newTeam.division} onChange={(e) => setNewTeam({ ...newTeam, division: Number(e.target.value) })}
@@ -1105,7 +1166,7 @@ export default function App() {
                               {divisions.map((dd, ii) => <option key={dd} value={ii}>D{ii + 1}</option>)}
                             </select>
                             <button onClick={() => setTeamPhone(t.id)} className="font-mono text-xs" title="Contact number"
-                              style={{ color: t.phone ? "#0E7C4A" : "var(--woodDark)" }}>{t.phone ? "📞✓" : "📞+"}</button>
+                              style={{ color: t.phone || t.phone2 ? "#0E7C4A" : "var(--woodDark)" }}>{t.phone || t.phone2 ? "📞✓" : "📞+"}</button>
                             <button onClick={() => removeTeam(t.id)} className="font-mono text-xs" style={{ color: "#B23A3A" }}>remove</button>
                           </div>
                           {i < group.length - 1 && <div className="perf mx-4" />}
