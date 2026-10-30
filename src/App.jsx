@@ -704,6 +704,8 @@ export default function App() {
         .font-mono { font-family: 'IBM Plex Mono', monospace; }
         .perf { background-image: repeating-linear-gradient(90deg, rgba(38,34,28,0.28) 0 6px, transparent 6px 14px); height: 1px; }
         select, input { font-family: 'IBM Plex Sans', sans-serif; }
+        /* iPhones zoom the whole page when a box has text smaller than 16px; keep it at 16px so they don't. */
+        input, select, textarea { font-size: 16px !important; }
         .tab-btn { transition: all 0.15s ease; }
       `}</style>
 
