@@ -83,11 +83,24 @@ function CategoryTabs({ categories, value, onChange }) {
 function DivisionOverview({ divisions, groups, activeDiv, onPick, query, setQuery, showRecord }) {
   const q = query.trim().toLowerCase();
   const isMatch = (t) => q.length > 0 && teamName(t).toLowerCase().includes(q);
+  const matchedDivs = q.length > 0
+    ? divisions.map((_, i) => ({ i, rows: (groups[i] || []).filter((r) => isMatch(r.team)) })).filter((m) => m.rows.length > 0)
+    : [];
   return (
     <div className="mb-6">
       <label className="font-body text-base font-semibold block mb-1.5" htmlFor="find-name">Find your name</label>
       <input id="find-name" type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Type your name here"
-        className="w-full mb-4 px-4 py-3.5 rounded-lg" style={{ border: "2px solid var(--woodDark)", background: "white" }} />
+        className="w-full mb-3 px-4 py-3.5 rounded-lg" style={{ border: "2px solid var(--woodDark)", background: "white" }} />
+      {q.length > 0 && matchedDivs.length === 0 && (
+        <p className="font-body text-base mb-3" style={{ color: "#B23A3A" }}>No one found with that name. Check the spelling.</p>
+      )}
+      {matchedDivs.slice(0, 4).map((m) => (
+        <button key={m.i} onClick={() => onPick(m.i)} className="w-full text-left font-body font-bold text-base rounded-xl px-4 py-3.5 mb-2"
+          style={{ background: "var(--court)", color: "var(--cream)", border: "3px solid var(--ink)" }}>
+          {teamName(m.rows[0].team)}{m.rows.length > 1 ? ` + ${m.rows.length - 1} more` : ""} {m.rows.length > 1 ? "are" : "is"} in D{m.i + 1}. Tap to go there ↓
+        </button>
+      ))}
+      <div className="mb-3" />
       <p className="font-mono text-sm uppercase tracking-wide mb-2" style={{ color: "var(--woodDark)" }}>All divisions</p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, alignItems: "stretch" }}>
         {divisions.map((name, i) => {
@@ -113,8 +126,8 @@ function DivisionOverview({ divisions, groups, activeDiv, onPick, query, setQuer
                   {rows.map((r) => (
                     <div key={r.teamId} className="rounded-md px-2 py-1.5 mb-1"
                       style={{ background: isMatch(r.team) ? "rgba(255,92,1,0.28)" : "transparent", fontWeight: isMatch(r.team) ? 700 : 400 }}>
-                      <p className="font-body" style={{ fontSize: 15, lineHeight: 1.25, overflowWrap: "anywhere" }}>{teamName(r.team)}</p>
-                      {showRecord && <p className="font-mono tabular-nums" style={{ fontSize: 14, color: "var(--woodDark)" }}>{r.matchesWon} won · {r.matchesLost} lost</p>}
+                      <p className="font-body" style={{ fontSize: 17, lineHeight: 1.25, overflowWrap: "anywhere" }}>{teamName(r.team)}</p>
+                      {showRecord && <p className="font-mono tabular-nums" style={{ fontSize: 15, color: "var(--woodDark)" }}>{r.matchesWon} won · {r.matchesLost} lost</p>}
                     </div>
                   ))}
                 </div>
@@ -131,12 +144,12 @@ function DivisionOverview({ divisions, groups, activeDiv, onPick, query, setQuer
 function GameInputs({ label, a, b, onA, onB }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="font-body text-sm font-semibold w-16 shrink-0">{label}</span>
+      <span className="font-body text-base font-semibold shrink-0" style={{ width: 76 }}>{label}</span>
       <input type="number" inputMode="numeric" placeholder="A" value={a} onChange={(e) => onA(e.target.value)}
-        className="w-20 px-2 py-3 rounded-md font-mono text-center" style={{ border: "2px solid var(--woodDark)" }} />
-      <span className="font-mono text-base" style={{ color: "var(--woodDark)" }}>–</span>
+        className="score-input w-24 px-2 py-4 rounded-lg font-mono text-center" style={{ border: "2px solid var(--woodDark)" }} />
+      <span className="font-mono text-xl" style={{ color: "var(--woodDark)" }}>–</span>
       <input type="number" inputMode="numeric" placeholder="B" value={b} onChange={(e) => onB(e.target.value)}
-        className="w-20 px-2 py-3 rounded-md font-mono text-center" style={{ border: "2px solid var(--woodDark)" }} />
+        className="score-input w-24 px-2 py-4 rounded-lg font-mono text-center" style={{ border: "2px solid var(--woodDark)" }} />
     </div>
   );
 }
@@ -714,6 +727,7 @@ export default function App() {
         select, input { font-family: 'IBM Plex Sans', sans-serif; }
         /* iPhones zoom the whole page when a box has text smaller than 16px; keep it at 16px so they don't. */
         input, select, textarea { font-size: 16px !important; }
+        .score-input { font-size: 26px !important; font-weight: 600; }
         .tab-btn { transition: all 0.15s ease; }
       `}</style>
 
@@ -730,7 +744,7 @@ export default function App() {
         />
       )}
 
-      <div style={{ background: "var(--court)" }} className="px-5 pt-7 pb-6 sticky top-0 z-10 shadow-sm">
+      <div style={{ background: "var(--court)" }} className="px-5 pt-7 pb-6">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="m-0"><img src={LOGO_WHITE} alt="Courtside Pickleball" style={{ display: "block", height: 46, width: "auto", maxWidth: "100%" }} /></h1>
@@ -768,7 +782,7 @@ export default function App() {
         </div>
       </div>
 
-      <div className="flex px-3 pt-3 gap-2">
+      <div className="flex px-3 pt-3 pb-3 gap-2 sticky top-0 z-20" style={{ background: "var(--cream)", boxShadow: "0 3px 8px rgba(23,20,18,0.10)" }}>
         {[{ id: "standings", label: "Standings" }, { id: "log", label: "Log match" }, ...(adminMode ? [{ id: "teams", label: "Teams" }] : [])].map((t) => (
           <button key={t.id} onClick={() => { setTab(t.id); setFormError(""); }}
             className="tab-btn font-body text-base font-semibold px-4 py-3 rounded-full flex-1"
@@ -827,7 +841,7 @@ export default function App() {
 
                 {overviewEl}
 
-                <div id="division-table" style={{ scrollMarginTop: 150 }} />
+                <div id="division-table" style={{ scrollMarginTop: 90 }} />
                 <p className="font-mono text-sm uppercase tracking-wide mb-2" style={{ color: "var(--woodDark)" }}>Choose a division</p>
                 <DivisionSegmented value={standingsDiv} onChange={setStandingsDiv} divisions={divisions} />
                 <p className="font-display text-2xl mt-4 mb-3">{data.categories.length > 1 ? `${cat.name} · ` : ""}{divisions[standingsDiv]}</p>
