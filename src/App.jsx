@@ -50,10 +50,15 @@ function isValidGame(a, b) {
 
 function DivisionSegmented({ value, onChange, divisions }) {
   return (
-    <div className="flex gap-1.5 overflow-x-auto pb-1">
+    <div className="flex gap-2 overflow-x-auto pb-1">
       {divisions.map((d, i) => (
-        <button key={d} onClick={() => onChange(i)} className="font-mono text-xs px-3 py-1.5 rounded-full shrink-0"
-          style={{ background: value === i ? "var(--court)" : "white", color: value === i ? "var(--cream)" : "var(--court)", border: "1px solid var(--court)" }}>
+        <button key={d + i} onClick={() => onChange(i)} className="font-body text-base font-bold rounded-xl shrink-0"
+          style={{
+            minWidth: 56, height: 48, padding: "0 16px",
+            background: value === i ? "var(--court)" : "white",
+            color: value === i ? "var(--cream)" : "var(--court)",
+            border: value === i ? "3px solid var(--ink)" : "2px solid var(--court)",
+          }}>
           D{i + 1}
         </button>
       ))}
@@ -65,7 +70,7 @@ function CategoryTabs({ categories, value, onChange }) {
   return (
     <div className="flex gap-1.5 overflow-x-auto pb-1">
       {categories.map((c) => (
-        <button key={c.id} onClick={() => onChange(c.id)} className="font-body text-sm font-semibold px-4 py-1.5 rounded-lg shrink-0"
+        <button key={c.id} onClick={() => onChange(c.id)} className="font-body text-base font-semibold px-4 py-2.5 rounded-lg shrink-0"
           style={{ background: value === c.id ? "var(--ink)" : "white", color: value === c.id ? "var(--cream)" : "var(--ink)", border: "1px solid var(--ink)" }}>
           {c.name}
         </button>
@@ -74,39 +79,42 @@ function CategoryTabs({ categories, value, onChange }) {
   );
 }
 
-// The front-page picture: every division side by side (up to 4 across), with its teams listed.
+// The front-page picture: every division as a big card (2 across), with its teams listed.
 function DivisionOverview({ divisions, groups, activeDiv, onPick, query, setQuery, showRecord }) {
   const q = query.trim().toLowerCase();
   const isMatch = (t) => q.length > 0 && teamName(t).toLowerCase().includes(q);
-  const cols = Math.min(Math.max(divisions.length, 1), 4);
   return (
-    <div className="mb-5">
-      <p className="font-mono text-xs uppercase tracking-wide mb-1.5" style={{ color: "var(--woodDark)" }}>All divisions</p>
-      <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find your name…"
-        className="w-full mb-2.5 px-3 py-2 rounded-md text-sm" style={{ border: "1px solid var(--woodDark)", background: "white" }} />
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: 6, alignItems: "stretch" }}>
+    <div className="mb-6">
+      <label className="font-body text-base font-semibold block mb-1.5" htmlFor="find-name">Find your name</label>
+      <input id="find-name" type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Type your name here"
+        className="w-full mb-4 px-4 py-3.5 rounded-lg" style={{ border: "2px solid var(--woodDark)", background: "white" }} />
+      <p className="font-mono text-sm uppercase tracking-wide mb-2" style={{ color: "var(--woodDark)" }}>All divisions</p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, alignItems: "stretch" }}>
         {divisions.map((name, i) => {
           const rows = groups[i] || [];
           const found = rows.some((r) => isMatch(r.team));
           const active = activeDiv === i;
           const showName = name !== `Division ${i + 1}`;
           return (
-            <div key={name + i} onClick={() => onPick(i)} className="rounded-lg overflow-hidden cursor-pointer"
-              style={{ border: active ? "2px solid var(--court)" : "1px solid var(--woodDark)", background: "white", minWidth: 0, display: "flex", flexDirection: "column" }}>
-              <div className="px-1.5 py-1.5 text-center"
+            <div key={name + i} onClick={() => onPick(i)} className="rounded-xl overflow-hidden cursor-pointer"
+              style={{ border: active ? "3px solid var(--court)" : "1px solid var(--woodDark)", background: "white", minWidth: 0, display: "flex", flexDirection: "column" }}>
+              <div className="px-2.5 py-2.5"
                 style={{ background: active ? "var(--court)" : "rgba(74,67,60,0.08)", color: active ? "var(--cream)" : "var(--ink)" }}>
-                <p className="font-mono text-xs font-semibold">D{i + 1}{found ? " ★" : ""}</p>
-                <p className="font-body truncate" style={{ fontSize: 10, opacity: 0.85, minHeight: 13 }}>{showName ? name : "\u00A0"}</p>
+                <div className="flex items-center justify-between gap-1">
+                  <p className="font-body font-bold" style={{ fontSize: 18 }}>D{i + 1}</p>
+                  {found && <span className="font-body font-bold" style={{ fontSize: 13, background: "var(--ball)", color: "var(--ink)", borderRadius: 99, padding: "1px 8px", border: "1px solid var(--ink)" }}>You ★</span>}
+                </div>
+                {showName && <p className="font-body truncate" style={{ fontSize: 14, opacity: 0.9 }}>{name}</p>}
               </div>
               {rows.length === 0 ? (
-                <p className="font-body text-center px-1 py-2" style={{ fontSize: 10, color: "var(--woodDark)" }}>No teams</p>
+                <p className="font-body px-2.5 py-3" style={{ fontSize: 14, color: "var(--woodDark)" }}>No teams yet</p>
               ) : (
-                <div className="p-1" style={{ flex: 1 }}>
+                <div className="p-1.5" style={{ flex: 1 }}>
                   {rows.map((r) => (
-                    <div key={r.teamId} className="rounded px-1 py-0.5 mb-0.5"
-                      style={{ background: isMatch(r.team) ? "rgba(255,92,1,0.25)" : "transparent", fontWeight: isMatch(r.team) ? 600 : 400 }}>
-                      <p className="font-body" style={{ fontSize: 11, lineHeight: 1.2, overflowWrap: "anywhere" }}>{teamName(r.team)}</p>
-                      {showRecord && <p className="font-mono tabular-nums" style={{ fontSize: 10, color: "var(--woodDark)" }}>{r.matchesWon}-{r.matchesLost}</p>}
+                    <div key={r.teamId} className="rounded-md px-2 py-1.5 mb-1"
+                      style={{ background: isMatch(r.team) ? "rgba(255,92,1,0.28)" : "transparent", fontWeight: isMatch(r.team) ? 700 : 400 }}>
+                      <p className="font-body" style={{ fontSize: 15, lineHeight: 1.25, overflowWrap: "anywhere" }}>{teamName(r.team)}</p>
+                      {showRecord && <p className="font-mono tabular-nums" style={{ fontSize: 14, color: "var(--woodDark)" }}>{r.matchesWon} won · {r.matchesLost} lost</p>}
                     </div>
                   ))}
                 </div>
@@ -115,7 +123,7 @@ function DivisionOverview({ divisions, groups, activeDiv, onPick, query, setQuer
           );
         })}
       </div>
-      <p className="font-body text-[11px] mt-2" style={{ color: "var(--woodDark)" }}>Tap a division to see its full table below. ★ = your name is in that division.</p>
+      <p className="font-body text-sm mt-3" style={{ color: "var(--woodDark)" }}>Tap a division to see its full table below.</p>
     </div>
   );
 }
@@ -123,12 +131,12 @@ function DivisionOverview({ divisions, groups, activeDiv, onPick, query, setQuer
 function GameInputs({ label, a, b, onA, onB }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="font-body text-xs w-14 shrink-0" style={{ color: "var(--woodDark)" }}>{label}</span>
+      <span className="font-body text-sm font-semibold w-16 shrink-0">{label}</span>
       <input type="number" inputMode="numeric" placeholder="A" value={a} onChange={(e) => onA(e.target.value)}
-        className="w-16 px-2 py-2 rounded-md text-sm font-mono text-center" style={{ border: "1px solid var(--woodDark)" }} />
-      <span className="font-mono text-xs" style={{ color: "var(--woodDark)" }}>–</span>
+        className="w-20 px-2 py-3 rounded-md font-mono text-center" style={{ border: "2px solid var(--woodDark)" }} />
+      <span className="font-mono text-base" style={{ color: "var(--woodDark)" }}>–</span>
       <input type="number" inputMode="numeric" placeholder="B" value={b} onChange={(e) => onB(e.target.value)}
-        className="w-16 px-2 py-2 rounded-md text-sm font-mono text-center" style={{ border: "1px solid var(--woodDark)" }} />
+        className="w-20 px-2 py-3 rounded-md font-mono text-center" style={{ border: "2px solid var(--woodDark)" }} />
     </div>
   );
 }
@@ -732,7 +740,7 @@ export default function App() {
           </div>
           <button
             onClick={toggleAdmin}
-            className="font-mono text-[11px] px-2.5 py-1 rounded-full shrink-0 mt-1"
+            className="font-mono text-xs px-2.5 py-1 rounded-full shrink-0 mt-1"
             style={{ border: "1px solid rgba(250,247,242,0.5)", color: "rgba(250,247,242,0.85)", background: "transparent" }}
           >
             {adminMode ? "Done" : "League admin"}
@@ -740,20 +748,20 @@ export default function App() {
         </div>
         <div className="mt-2">
           {saveStatus === "saving" && (
-            <p className="font-mono text-[10px]" style={{ color: "rgba(250,247,242,0.7)" }}>Saving…</p>
+            <p className="font-mono text-xs" style={{ color: "rgba(250,247,242,0.7)" }}>Saving…</p>
           )}
           {saveStatus === "saved" && lastSavedAt && (
-            <p className="font-mono text-[10px]" style={{ color: "rgba(250,247,242,0.7)" }}>
+            <p className="font-mono text-xs" style={{ color: "rgba(250,247,242,0.7)" }}>
               Saved {new Date(lastSavedAt).toLocaleTimeString("default", { hour: "2-digit", minute: "2-digit" })}
             </p>
           )}
           {saveStatus === "error" && (
-            <p className="font-mono text-[10px] font-semibold" style={{ color: "#FFD9C2" }}>
+            <p className="font-mono text-xs font-semibold" style={{ color: "#FFD9C2" }}>
               ⚠ Couldn't save — your last change may be lost. Try again.
             </p>
           )}
           {loadError && (
-            <p className="font-mono text-[10px] font-semibold" style={{ color: "#FFD9C2" }}>
+            <p className="font-mono text-xs font-semibold" style={{ color: "#FFD9C2" }}>
               ⚠ Couldn't load saved data — reload the page before entering scores.
             </p>
           )}
@@ -763,7 +771,7 @@ export default function App() {
       <div className="flex px-3 pt-3 gap-2">
         {[{ id: "standings", label: "Standings" }, { id: "log", label: "Log match" }, ...(adminMode ? [{ id: "teams", label: "Teams" }] : [])].map((t) => (
           <button key={t.id} onClick={() => { setTab(t.id); setFormError(""); }}
-            className="tab-btn font-body text-sm font-medium px-4 py-2 rounded-full flex-1"
+            className="tab-btn font-body text-base font-semibold px-4 py-3 rounded-full flex-1"
             style={{ background: tab === t.id ? "var(--ball)" : "transparent", color: tab === t.id ? "var(--ink)" : "var(--court)", border: `1px solid ${tab === t.id ? "var(--ball)" : "var(--woodDark)"}` }}>
             {t.label}
           </button>
@@ -795,14 +803,14 @@ export default function App() {
                   <div className="flex items-center justify-between">
                     <label className="font-mono text-xs uppercase tracking-wide" style={{ color: "var(--woodDark)" }}>Season</label>
                     <select value={selectedSeasonId || ""} onChange={(e) => { setSelectedSeasonId(e.target.value); setCloseSummary(null); }}
-                      className="font-mono text-sm px-3 py-1.5 rounded-md" style={{ border: "1px solid var(--woodDark)", background: "white" }}>
+                      className="font-mono px-3 py-2 rounded-md" style={{ border: "2px solid var(--woodDark)", background: "white" }}>
                       {[...data.seasons].reverse().map((s) => (
                         <option key={s.id} value={s.id}>{s.name}{s.closed ? " (closed)" : s.id === data.activeSeasonId ? " (active)" : ""}</option>
                       ))}
                     </select>
                   </div>
                   {viewingSeason && (
-                    <p className="font-body text-xs mt-2" style={{ color: "var(--woodDark)" }}>
+                    <p className="font-body text-sm mt-2" style={{ color: "var(--woodDark)" }}>
                       {fmtDate(viewingSeason.startDate)} → {fmtDate(viewingSeason.endDate)}
                     </p>
                   )}
@@ -810,8 +818,8 @@ export default function App() {
                     <div className="rounded-lg px-3 py-2.5 mt-3 flex items-center gap-3" style={{ background: "rgba(255,92,1,0.14)", border: "1px solid var(--court)" }}>
                       <span style={{ fontSize: 26, lineHeight: 1 }}>🏆</span>
                       <div className="min-w-0">
-                        <p className="font-mono text-[10px] uppercase tracking-wide" style={{ color: "var(--woodDark)" }}>Prize this season</p>
-                        <p className="font-display text-base" style={{ overflowWrap: "anywhere" }}>{viewingSeason.prize}</p>
+                        <p className="font-mono text-xs uppercase tracking-wide" style={{ color: "var(--woodDark)" }}>Prize this season</p>
+                        <p className="font-display text-lg" style={{ overflowWrap: "anywhere" }}>{viewingSeason.prize}</p>
                       </div>
                     </div>
                   )}
@@ -820,14 +828,14 @@ export default function App() {
                 {overviewEl}
 
                 <div id="division-table" style={{ scrollMarginTop: 150 }} />
-                <p className="font-mono text-xs uppercase tracking-wide mb-1.5" style={{ color: "var(--woodDark)" }}>Division</p>
+                <p className="font-mono text-sm uppercase tracking-wide mb-2" style={{ color: "var(--woodDark)" }}>Choose a division</p>
                 <DivisionSegmented value={standingsDiv} onChange={setStandingsDiv} divisions={divisions} />
-                <p className="font-display text-lg mt-3 mb-2">{data.categories.length > 1 ? `${cat.name} · ` : ""}{divisions[standingsDiv]}</p>
+                <p className="font-display text-2xl mt-4 mb-3">{data.categories.length > 1 ? `${cat.name} · ` : ""}{divisions[standingsDiv]}</p>
                 {cat.chats && cat.chats[standingsDiv] && (
                   <a href={cat.chats[standingsDiv]} target="_blank" rel="noopener noreferrer"
-                    className="inline-block mb-3 font-body text-sm font-semibold px-3.5 py-2 rounded-full"
+                    className="block text-center mb-4 font-body text-base font-semibold px-4 py-3 rounded-xl"
                     style={{ background: "#0E7C4A", color: "white", textDecoration: "none" }}>
-                    💬 Join the {divisions[standingsDiv]} chat
+                    💬 Join the {divisions[standingsDiv]} WhatsApp group
                   </a>
                 )}
                 <div className="mb-1" />
@@ -842,22 +850,22 @@ export default function App() {
                     <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--woodDark)", background: "white" }}>
                       {standings.map((s, i) => (
                         <div key={s.teamId}>
-                          <div className="flex items-center gap-3 px-4 py-3">
-                            <div className="font-mono text-sm w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                          <div className="flex items-center gap-3 px-4 py-4">
+                            <div className="font-mono text-base font-semibold w-10 h-10 rounded-full flex items-center justify-center shrink-0"
                               style={{ background: i === 0 ? "var(--ball)" : "var(--cream)", border: "1px solid var(--woodDark)", color: "var(--ink)" }}>
                               {i + 1}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-body font-semibold text-sm truncate">{teamName(s.team)}</p>
-                              <p className="font-mono text-xs" style={{ color: "var(--woodDark)" }}>
-                                {s.matches} matches · {s.gamesWon}-{s.gamesLost} games · {s.points} pts
+                              <p className="font-body font-semibold text-lg" style={{ overflowWrap: "anywhere" }}>{teamName(s.team)}</p>
+                              <p className="font-body text-base" style={{ color: "var(--woodDark)" }}>
+                                Played {s.matches} · Games {s.gamesWon}-{s.gamesLost} · Points {s.points}
                               </p>
                               {(waLink(s.team.phone) || waLink(s.team.phone2)) && (
                                 <div className="flex flex-wrap gap-1.5 mt-1.5">
                                   {[[s.team.p1, s.team.phone], [s.team.p2, s.team.phone2]].map(([nm, ph], k) =>
                                     waLink(ph) ? (
                                       <a key={k} href={waLink(ph)} target="_blank" rel="noopener noreferrer"
-                                        className="inline-block font-mono text-[11px] px-2.5 py-1 rounded-full"
+                                        className="inline-block font-body text-sm font-semibold px-3 py-2 rounded-full"
                                         style={{ background: "#0E7C4A", color: "white", textDecoration: "none" }}>
                                         💬 {firstName(nm)}
                                       </a>
@@ -867,8 +875,8 @@ export default function App() {
                               )}
                             </div>
                             <div className="text-right shrink-0">
-                              <p className="font-mono text-lg font-semibold tabular-nums">{s.matchesWon}-{s.matchesLost}</p>
-                              <p className="font-mono text-[10px] uppercase" style={{ color: "var(--woodDark)" }}>match wins</p>
+                              <p className="font-mono text-2xl font-semibold tabular-nums">{s.matchesWon}-{s.matchesLost}</p>
+                              <p className="font-body text-sm" style={{ color: "var(--woodDark)" }}>won-lost</p>
                             </div>
                           </div>
                           {i < standings.length - 1 && <div className="perf mx-4" />}
@@ -876,16 +884,26 @@ export default function App() {
                       ))}
                     </div>
                     {(promoteCandidates.length > 0 || relegateCandidates.length > 0) && (
-                      <div className="rounded-xl p-4 mt-4 space-y-2" style={{ border: "1px solid var(--woodDark)", background: "rgba(255,92,1,0.1)" }}>
-                        <p className="font-mono text-xs uppercase tracking-wide" style={{ color: "var(--woodDark)" }}>If the season ended today</p>
-                        {promoteCandidates.map((p) => (
-                          <p key={p.teamId} className="font-body text-sm">↑ {teamName(p.team)} would go up to {divisions[standingsDiv - 1]}</p>
-                        ))}
-                        {relegateCandidates.map((r) => (
-                          <p key={r.teamId} className="font-body text-sm">
-                            ↓ {teamName(r.team)} would go down to {divisions[standingsDiv + 1]}{r.matches === 0 ? " (no matches played)" : ""}
-                          </p>
-                        ))}
+                      <div className="rounded-xl p-4 mt-5" style={{ border: "1px solid var(--woodDark)", background: "rgba(255,92,1,0.1)" }}>
+                        <p className="font-display text-xl">If the season ended today</p>
+                        {promoteCandidates.length > 0 && (
+                          <div className="mt-3">
+                            <p className="font-body text-base font-bold" style={{ color: "#0E7C4A" }}>↑ Moving up to {divisions[standingsDiv - 1]}</p>
+                            {promoteCandidates.map((p) => (
+                              <p key={p.teamId} className="font-body text-base mt-1">{teamName(p.team)}</p>
+                            ))}
+                          </div>
+                        )}
+                        {relegateCandidates.length > 0 && (
+                          <div className="mt-3">
+                            <p className="font-body text-base font-bold" style={{ color: "#B23A3A" }}>↓ Moving down to {divisions[standingsDiv + 1]}</p>
+                            {relegateCandidates.map((r) => (
+                              <p key={r.teamId} className="font-body text-base mt-1">
+                                {teamName(r.team)}{r.matches === 0 ? " (no matches played)" : ""}
+                              </p>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </>
@@ -904,7 +922,7 @@ export default function App() {
               </div>
             ) : (
               <>
-                <p className="font-mono text-xs uppercase tracking-wide mb-1.5" style={{ color: "var(--woodDark)" }}>Division</p>
+                <p className="font-mono text-sm uppercase tracking-wide mb-2" style={{ color: "var(--woodDark)" }}>Choose a division</p>
                 <DivisionSegmented value={logDiv} onChange={setLogDiv} divisions={divisions} />
 
                 {teamsInDiv(logDiv).length < 2 ? (
@@ -916,17 +934,17 @@ export default function App() {
                   <div className="rounded-xl p-4 mt-3 space-y-4" style={{ border: "1px solid var(--woodDark)", background: "white" }}>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="font-mono text-xs uppercase tracking-wide" style={{ color: "var(--woodDark)" }}>Team A</label>
+                        <label className="font-body text-base font-semibold">Team A</label>
                         <select value={matchForm.teamA} onChange={(e) => setMatchForm({ ...matchForm, teamA: e.target.value })}
-                          className="w-full mt-1 px-2 py-2 rounded-md text-sm" style={{ border: "1px solid var(--woodDark)" }}>
+                          className="w-full mt-1 px-2 py-3 rounded-md" style={{ border: "2px solid var(--woodDark)" }}>
                           <option value="">Select team</option>
                           {teamsInDiv(logDiv).map((t) => <option key={t.id} value={t.id}>{teamName(t)}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label className="font-mono text-xs uppercase tracking-wide" style={{ color: "var(--woodDark)" }}>Team B</label>
+                        <label className="font-body text-base font-semibold">Team B</label>
                         <select value={matchForm.teamB} onChange={(e) => setMatchForm({ ...matchForm, teamB: e.target.value })}
-                          className="w-full mt-1 px-2 py-2 rounded-md text-sm" style={{ border: "1px solid var(--woodDark)" }}>
+                          className="w-full mt-1 px-2 py-3 rounded-md" style={{ border: "2px solid var(--woodDark)" }}>
                           <option value="">Select team</option>
                           {teamsInDiv(logDiv).map((t) => <option key={t.id} value={t.id}>{teamName(t)}</option>)}
                         </select>
@@ -934,19 +952,19 @@ export default function App() {
                     </div>
 
                     <div className="space-y-2">
-                      <p className="font-body text-xs font-semibold" style={{ color: "var(--court)" }}>Game scores (first to 11, win by 2)</p>
+                      <p className="font-body text-base font-semibold" style={{ color: "var(--court)" }}>Game scores (first to 11, win by 2)</p>
                       <GameInputs label="Game 1" a={matchForm.g1a} b={matchForm.g1b}
                         onA={(v) => setMatchForm({ ...matchForm, g1a: v })} onB={(v) => setMatchForm({ ...matchForm, g1b: v })} />
                       <GameInputs label="Game 2" a={matchForm.g2a} b={matchForm.g2b}
                         onA={(v) => setMatchForm({ ...matchForm, g2a: v })} onB={(v) => setMatchForm({ ...matchForm, g2b: v })} />
                       <GameInputs label="Game 3*" a={matchForm.g3a} b={matchForm.g3b}
                         onA={(v) => setMatchForm({ ...matchForm, g3a: v })} onB={(v) => setMatchForm({ ...matchForm, g3b: v })} />
-                      <p className="font-body text-[11px]" style={{ color: "var(--woodDark)" }}>*Leave Game 3 blank if the match finished 2–0.</p>
+                      <p className="font-body text-sm" style={{ color: "var(--woodDark)" }}>*Leave Game 3 blank if the match finished 2–0.</p>
                     </div>
 
                     {formError && <p className="font-body text-xs" style={{ color: "#B23A3A" }}>{formError}</p>}
 
-                    <button onClick={submitMatch} className="w-full py-2.5 rounded-md font-body font-semibold text-sm" style={{ background: "var(--court)", color: "var(--cream)" }}>
+                    <button onClick={submitMatch} className="w-full py-4 rounded-xl font-body font-bold text-lg" style={{ background: "var(--court)", color: "var(--cream)" }}>
                       Save match
                     </button>
                   </div>
@@ -963,10 +981,10 @@ export default function App() {
                         const tB = data.teams.find((t) => t.id === m.teamB);
                         const gs = m.games.filter((g) => g).map((g) => `${g.a}-${g.b}`).join(", ");
                         return (
-                          <div key={m.id} className="rounded-lg px-3 py-2 flex items-center justify-between text-sm" style={{ border: "1px solid var(--woodDark)", background: "white" }}>
+                          <div key={m.id} className="rounded-lg px-3 py-3 flex items-center justify-between text-base" style={{ border: "1px solid var(--woodDark)", background: "white" }}>
                             <div className="font-body">
-                              <span className="font-mono text-xs mr-2" style={{ color: "var(--woodDark)" }}>{m.date.slice(5)}</span>
-                              {teamName(tA)} vs {teamName(tB)} <span className="font-mono text-xs">({gs})</span>
+                              <span className="font-mono text-sm mr-2" style={{ color: "var(--woodDark)" }}>{m.date.slice(5)}</span>
+                              {teamName(tA)} vs {teamName(tB)} <span className="font-mono text-sm">({gs})</span>
                             </div>
                             {adminMode && (
                               <button onClick={() => removeMatch(m.id)} className="font-mono text-xs shrink-0 ml-2" style={{ color: "#B23A3A" }}>remove</button>
@@ -1036,7 +1054,7 @@ export default function App() {
                           {s.name}
                           {s.id === data.activeSeasonId ? " (active)" : s.closed ? " (closed)" : ""}
                         </p>
-                        <p className="font-mono text-[10px]" style={{ color: "var(--woodDark)" }}>
+                        <p className="font-mono text-xs" style={{ color: "var(--woodDark)" }}>
                           {fmtDate(s.startDate)} → {fmtDate(s.endDate)}
                         </p>
                       </div>
@@ -1088,7 +1106,7 @@ export default function App() {
                 ))}
               </div>
               <p className="font-mono text-xs uppercase tracking-wide mb-1" style={{ color: "var(--woodDark)" }}>WhatsApp chat for each division</p>
-              <p className="font-body text-[11px] mb-2" style={{ color: "var(--woodDark)" }}>
+              <p className="font-body text-xs mb-2" style={{ color: "var(--woodDark)" }}>
                 Make a WhatsApp group, copy its invite link, and add it here. Members then see a Join button.
               </p>
               <div className="space-y-1.5 mb-3">
@@ -1133,7 +1151,7 @@ export default function App() {
                   <input type="tel" inputMode="tel" value={newTeam.phone2 || ""} onChange={(e) => setNewTeam({ ...newTeam, phone2: e.target.value })}
                     placeholder="Their number" className="w-full min-w-0 px-3 py-2 rounded-md text-sm" style={{ border: "1px solid var(--woodDark)" }} />
                 </div>
-                <p className="font-body text-[11px]" style={{ color: "var(--woodDark)" }}>
+                <p className="font-body text-xs" style={{ color: "var(--woodDark)" }}>
                   Numbers are optional and give each player a Message button. Use 📞 next to a team in the list below to add or change them later. Only add numbers people are happy to share.
                 </p>
                 <div className="flex gap-2">
