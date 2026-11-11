@@ -818,7 +818,8 @@ export default function App() {
         select, input { font-family: 'IBM Plex Sans', sans-serif; }
         /* iPhones zoom the whole page when a box has text smaller than 16px; keep it at 16px so they don't. */
         input, select, textarea { font-size: 16px !important; }
-        .score-input { font-size: 26px !important; font-weight: 600; }
+        select { max-width: 100%; }
+    .score-input { font-size: 26px !important; font-weight: 600; }
         .tab-btn { transition: all 0.15s ease; }
       `}</style>
 
@@ -905,10 +906,10 @@ export default function App() {
             ) : (
               <>
                 <div className="rounded-xl p-4 mb-4" style={{ border: "1px solid var(--woodDark)", background: "white" }}>
-                  <div className="flex items-center justify-between">
-                    <label className="font-mono text-xs uppercase tracking-wide" style={{ color: "var(--woodDark)" }}>Season</label>
+                  <div>
+                    <label className="font-mono text-xs uppercase tracking-wide block mb-1" style={{ color: "var(--woodDark)" }}>Season</label>
                     <select value={selectedSeasonId || ""} onChange={(e) => { setSelectedSeasonId(e.target.value); setCloseSummary(null); }}
-                      className="font-mono px-3 py-2 rounded-md" style={{ border: "2px solid var(--woodDark)", background: "white" }}>
+                      className="font-body px-3 py-3 rounded-md w-full" style={{ border: "2px solid var(--woodDark)", background: "white", maxWidth: "100%", minWidth: 0 }}>
                       {[...data.seasons].reverse().map((s) => (
                         <option key={s.id} value={s.id}>{s.name}{s.closed ? " (closed)" : s.id === data.activeSeasonId ? " (active)" : ""}</option>
                       ))}
