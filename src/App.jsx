@@ -11,6 +11,23 @@ let saveBusy = false;
 
 // Older saves have one flat list of divisions. Wrap them into a single category
 // and tag existing teams and matches with it, so nothing is lost.
+const DEFAULT_RULES = `HOW A MATCH WORKS
+- Games are played to 11 points, and you must win by 2.
+- A match is the best of 3 games. If one team wins the first two games, the match is over and Game 3 is not played.
+- If it's 1 game each, play Game 3.
+
+HOW THE TABLE WORKS
+- Teams are ranked by matches won first.
+- If teams are level, it's decided by games won, then by points scored.
+
+PROMOTION AND RELEGATION
+- At the end of the season, the top teams move up a division and the bottom teams move down.
+- A team that plays no matches in the season is moved down a division.
+
+LOGGING RESULTS
+- Either team can enter the score straight after the match, on the Log match tab.
+- Please check the scores before you tap Save match.`;
+
 function normalizeData(d) {
   if (!d.categories || !d.categories.length) {
     const mainId = "cat_main";
@@ -256,6 +273,8 @@ export default function App() {
   const [data, setData] = useState({ teams: [], seasons: [], activeSeasonId: null, matches: [], categories: [{ id: "cat_main", name: "Main league", divisions: DEFAULT_DIVISIONS.slice() }], adminPin: null });
   const [loaded, setLoaded] = useState(false);
   const [tab, setTab] = useState("standings");
+  const [rulesEditing, setRulesEditing] = useState(false);
+  const [rulesDraft, setRulesDraft] = useState("");
   const [catId, setCatId] = useState("cat_main");
   const [findQuery, setFindQuery] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -875,10 +894,10 @@ export default function App() {
       </div>
 
       <div className="flex px-3 pt-3 pb-3 gap-2 sticky top-0 z-20" style={{ background: "var(--cream)", boxShadow: "0 3px 8px rgba(23,20,18,0.10)" }}>
-        {[{ id: "standings", label: "Standings" }, { id: "log", label: "Log match" }, ...(adminMode ? [{ id: "teams", label: "Teams" }] : [])].map((t) => (
+        {[{ id: "standings", label: "Standings" }, { id: "log", label: "Log match" }, { id: "rules", label: "Rules" }, ...(adminMode ? [{ id: "teams", label: "Teams" }] : [])].map((t) => (
           <button key={t.id} onClick={() => { setTab(t.id); setFormError(""); setMatchResult(null); }}
-            className="tab-btn font-body text-base font-semibold px-4 py-3 rounded-full flex-1"
-            style={{ background: tab === t.id ? "var(--ball)" : "transparent", color: tab === t.id ? "var(--ink)" : "var(--court)", border: `1px solid ${tab === t.id ? "var(--ball)" : "var(--woodDark)"}` }}>
+            className="tab-btn font-body font-semibold px-1 py-3 rounded-full flex-1 whitespace-nowrap" 
+            style={{ fontSize: adminMode ? 14 : 16, background: tab === t.id ? "var(--ball)" : "transparent", color: tab === t.id ? "var(--ink)" : "var(--court)", border: `1px solid ${tab === t.id ? "var(--ball)" : "var(--woodDark)"}` }}>
             {t.label}
           </button>
         ))}
@@ -1121,6 +1140,41 @@ export default function App() {
                   </div>
                 )}
               </>
+            )}
+          </div>
+        )}
+
+        {tab === "rules" && (
+          <div className="rounded-xl p-5" style={{ border: "1px solid var(--woodDark)", background: "white" }}>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <h2 className="font-display text-2xl">League rules</h2>
+              {adminMode && !rulesEditing && (
+                <button onClick={() => { setRulesDraft(data.rules || DEFAULT_RULES); setRulesEditing(true); }}
+                  className="font-body text-sm font-semibold px-4 py-2 rounded-full" style={{ border: "1px solid var(--woodDark)" }}>Edit</button>
+              )}
+            </div>
+            {rulesEditing ? (
+              <div>
+                <textarea value={rulesDraft} onChange={(e) => setRulesDraft(e.target.value)} rows={16}
+                  className="w-full font-body px-3 py-3 rounded-md" style={{ border: "2px solid var(--woodDark)", lineHeight: 1.5 }} />
+                <p className="font-body text-sm mt-2" style={{ color: "var(--woodDark)" }}>Tip: start a line with a dash (-) for a bullet. Type a heading in capitals on its own line.</p>
+                <div className="flex gap-2 mt-3">
+                  <button onClick={() => { persist({ ...data, rules: rulesDraft.trim() }); setRulesEditing(false); }}
+                    className="font-body text-base font-semibold px-5 py-3 rounded-full flex-1" style={{ background: "var(--court)", color: "white" }}>Save rules</button>
+                  <button onClick={() => setRulesEditing(false)}
+                    className="font-body text-base font-semibold px-5 py-3 rounded-full" style={{ border: "1px solid var(--woodDark)" }}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                {(data.rules || DEFAULT_RULES).split("\n").map((line, i) => {
+                  const t = line.trim();
+                  if (!t) return <div key={i} style={{ height: 10 }} />;
+                  if (t.startsWith("- ")) return <p key={i} className="font-body" style={{ fontSize: 17, lineHeight: 1.5, paddingLeft: 18, textIndent: -14, marginBottom: 6 }}>• {t.slice(2)}</p>;
+                  if (t === t.toUpperCase() && /[A-Z]/.test(t)) return <p key={i} className="font-mono text-sm font-semibold tracking-wide mt-3 mb-2" style={{ color: "var(--court)" }}>{t}</p>;
+                  return <p key={i} className="font-body" style={{ fontSize: 17, lineHeight: 1.5, marginBottom: 6 }}>{t}</p>;
+                })}
+              </div>
             )}
           </div>
         )}
